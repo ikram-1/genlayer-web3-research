@@ -1,143 +1,406 @@
-# Sample GenLayer project
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/8Jm4v89VAu)
-[![Telegram](https://img.shields.io/badge/Telegram--T.svg?style=social&logo=telegram)](https://t.me/genlayer)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/yeagerai.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
-[![GitHub star chart](https://img.shields.io/github/stars/yeagerai/genlayer-project-boilerplate?style=social)](https://star-history.com/#yeagerai/genlayer-js)
+# Web3 Research — AI-Powered Onchain Research & Token Explorer
 
-## About
-This project includes the boilerplate code for a GenLayer use case implementation, specifically a football bets game.
+A GenLayer-powered Web3 research dApp that analyzes Web3 project websites through an Intelligent Contract and combines verified onchain research with live CoinMarketCap token market data.
 
-## What's included
-- An example intelligent contract (Football Bets) with web access and LLM integration
-- **Direct mode tests** — fast, in-memory unit tests with web/LLM mocking (~ms per test)
-- **Integration tests** — full end-to-end tests against GenLayer Studio
-- **Contract linting** — static analysis to catch common contract issues before deployment
-- **CI pipeline** — GitHub Actions workflow for linting and direct tests
-- A production-ready Next.js 15 frontend with TypeScript, TanStack Query, and Radix UI
-- Configuration file template and deployment scripts
+## Overview
 
-## Requirements
-- Python >= 3.12
-- [GenLayer CLI](https://github.com/genlayerlabs/genlayer-cli) globally installed: `npm install -g genlayer`
-- GenLayer Studio (for integration tests and deployment): Install from [Docs](https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup#using-the-genlayer-studio) or use the hosted [GenLayer Studio](https://studio.genlayer.com/)
+**Web3 Research** helps users quickly research Web3 projects from a single dashboard.
+
+The application uses a **GenLayer Intelligent Contract** to perform decentralized web research and store the verified research result onchain. After the research result is retrieved, the application automatically opens a **Token Explorer** that displays live market information from CoinMarketCap along with a 30-day token price chart.
+
+The goal is to combine:
+
+- AI-powered Web3 research
+- Onchain verification
+- Web data analysis
+- Live token market information
+- A simple and user-friendly interface
+
+## Key Features
+
+### 🧠 AI-Powered Web3 Research
+
+Enter a Web3 project name and website, then send the research request through the GenLayer Intelligent Contract.
+
+The contract:
+
+1. Accesses the project's website.
+2. Extracts relevant web information.
+3. Uses an LLM to analyze the information.
+4. Applies GenLayer's equivalence principle.
+5. Stores the verified research result onchain.
+
+### 🔗 GenLayer Intelligent Contract
+
+The research logic runs inside a Python Intelligent Contract.
+
+Deployed contract:
+
+```text
+0xd50bD58279aC735DB3c8A7A06579BB5b662Db989
+```
+
+Deployment transaction:
+
+```text
+0x5350b2e714d83c95f864c2a6bd56e616d47093ba2cff094a2d5284d10adf9a2c
+```
+
+The deployment was successfully accepted with:
+
+```text
+MAJORITY_AGREE
+```
+
+### 🔍 Verified Research Result
+
+After the research transaction completes, users can retrieve the verified result from the Intelligent Contract.
+
+The UI clearly separates the AI research result from the live token market data.
+
+### 🪙 Token Explorer
+
+After **Get Research**, the Token Explorer automatically appears.
+
+It provides live CoinMarketCap data including:
+
+- Token name
+- Token symbol
+- CoinMarketCap rank
+- Current price
+- 24-hour price change
+- Market capitalization
+- 24-hour trading volume
+
+A **Refresh** button allows the user to request the latest market data again.
+
+### 📈 30-Day Price Chart
+
+The Token Explorer also retrieves historical daily market data from CoinMarketCap and displays the latest 30-day price history as an interactive line chart.
+
+The chart includes:
+
+- Daily price points
+- Interactive tooltips
+- Price formatting
+- Responsive layout
+
+## How It Works
+
+```text
+User enters Web3 project
+        ↓
+Research Project
+        ↓
+GenLayer Intelligent Contract
+        ↓
+Website analysis + LLM processing
+        ↓
+Equivalence Principle / Consensus
+        ↓
+Verified research stored onchain
+        ↓
+Get Research
+        ↓
+Token Explorer automatically appears
+        ↓
+CoinMarketCap live market data
+        ↓
+30-day price chart
+```
+
+## Architecture
+
+```text
+                    ┌─────────────────────┐
+                    │      Next.js UI     │
+                    │   Web3 Research     │
+                    └──────────┬──────────┘
+                               │
+                     Web3 / Contract Call
+                               │
+                               ▼
+                 ┌─────────────────────────┐
+                 │ GenLayer Intelligent     │
+                 │ Contract                 │
+                 │                         │
+                 │ • Website Research      │
+                 │ • LLM Analysis           │
+                 │ • Equivalence Principle │
+                 │ • Onchain Storage        │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                    Verified Research
+                              │
+                              ▼
+                 ┌─────────────────────────┐
+                 │     Token Explorer      │
+                 │                         │
+                 │ Next.js API Route       │
+                 │        ↓                │
+                 │ CoinMarketCap API       │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                   Live Token Market Data
+                              │
+                              ▼
+                       30-Day Chart
+```
 
 ## Project Structure
 
-```
-contracts/              # Python intelligent contracts
-tests/
-  direct/               # Fast in-memory tests (no Studio required)
-    test_create_bet.py   # Bet creation logic
-    test_resolve_bet.py  # Bet resolution with web/LLM mocks
-    test_views.py        # Read-only view methods
-  integration/           # Full tests against GenLayer Studio
-    test_football_bets.py
-    fixtures.py          # Expected state fixtures
-frontend/               # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
-deploy/                 # TypeScript deployment scripts
-gltest.config.yaml      # Test runner network configuration
-pyproject.toml          # Python/pytest configuration
-.github/workflows/      # CI pipeline
-```
-
-## Quick Start
-
-### 1. Set up Python environment
-
-```shell
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2. Lint your contracts
-
-Run the GenVM linter to catch issues before deployment:
-
-```shell
-genvm-lint check contracts/football_bets.py
+```text
+genlayer-web3-research/
+│
+├── contracts/
+│   └── web3_research.py
+│
+├── tests/
+│   ├── direct/
+│   │   └── test_web3_research.py
+│   │
+│   └── integration/
+│       └── test_web3_research.py
+│
+├── frontend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── token/
+│   │   │       └── route.ts
+│   │   │
+│   │   ├── globals.css
+│   │   ├── page.tsx
+│   │   └── layout.tsx
+│   │
+│   └── lib/
+│       └── contracts/
+│           └── Web3Research.ts
+│
+├── .gitignore
+└── README.md
 ```
 
-The linter catches:
-- Forbidden imports and non-deterministic calls
-- Invalid storage types (must use `TreeMap`, `DynArray`, `u256`, etc.)
-- Missing decorators and return type annotations
-- Non-deterministic operations outside equivalence principle blocks
-- And [20+ other rules](https://github.com/genlayerlabs/genvm-linter)
+## Technology Stack
 
-### 3. Run direct mode tests
+### Blockchain / Smart Contracts
 
-Direct mode tests run contracts in-memory without needing GenLayer Studio. They use mocks for web requests and LLM calls, giving you fast feedback (~milliseconds per test):
+- GenLayer
+- Python Intelligent Contracts
+- GenVM
+- GenLayer Studio
 
-```shell
-pytest tests/direct/ -v
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Recharts
+- MetaMask
+
+### Data
+
+- CoinMarketCap API
+- GenLayer web rendering
+- LLM-powered analysis
+
+### Testing
+
+- pytest
+- GenLayer direct mode
+- GenLayer integration tests
+- GenVM linter
+
+## CMC API Security
+
+The CoinMarketCap API key is **not exposed in the frontend**.
+
+The application uses a server-side Next.js API route:
+
+```text
+frontend/app/api/token/route.ts
 ```
 
-Direct mode features used in these tests:
-- `direct_deploy("contracts/file.py")` — deploy contract in memory
-- `direct_vm.sender = address` — set transaction sender
-- `direct_vm.mock_web(pattern, response)` — mock HTTP/render calls
-- `direct_vm.mock_llm(pattern, response)` — mock LLM responses
-- `direct_vm.expect_revert("message")` — assert expected failures
-- `direct_vm.clear_mocks()` — reset mocks between calls
+The flow is:
 
-### 4. Deploy the contract
-
-1. Choose your network: `genlayer network`
-2. Deploy: `genlayer deploy` (runs the script in `/deploy/deployScript.ts`)
-
-### 5. Run integration tests
-
-Integration tests deploy the contract to GenLayer Studio and test with real consensus:
-
-```shell
-gltest tests/integration/ -v -s
+```text
+Frontend
+   ↓
+/api/token?symbol=ASE
+   ↓
+Next.js Server Route
+   ↓
+CoinMarketCap API
+   ↓
+Market Data
+   ↓
+Frontend
 ```
 
-These require GenLayer Studio running (local or hosted).
+The API key is stored in an environment variable and is excluded from Git using `.gitignore`.
 
-### 6. Set up the frontend
+No API credentials are included in this repository.
 
-1. Copy `frontend/.env.example` to `frontend/.env`
-2. Add your deployed contract address as `NEXT_PUBLIC_CONTRACT_ADDRESS`
-3. Run:
+## Requirements
 
-```shell
+- Node.js
+- Python 3.12+
+- GenLayer CLI
+- GenLayer Studio
+- MetaMask
+- CoinMarketCap API key for Token Explorer functionality
+
+## Local Development
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/crainx25-stack/genlayer-web3-research.git
+cd genlayer-web3-research
+```
+
+### 2. Install frontend dependencies
+
+```bash
 cd frontend
 npm install
+```
+
+### 3. Configure environment variables
+
+Create:
+
+```text
+frontend/.env.local
+```
+
+Add your CoinMarketCap API key:
+
+```env
+CMC_API_KEY=YOUR_CMC_API_KEY
+```
+
+Do not commit `.env.local` to GitHub.
+
+### 4. Start the frontend
+
+```bash
 npm run dev
 ```
 
-The app will be available at http://localhost:3000/.
+The application will be available at:
 
-## How the Football Bets Contract Works
+```text
+http://localhost:3000
+```
 
-1. **Creating Bets**: Users bet on a football match by providing the game date, teams, and predicted winner.
-2. **Resolving Bets**: After the match, the contract fetches results from BBC Sport, uses an LLM to extract the score, and validates via the equivalence principle.
-3. **Points**: Correct predictions earn points. Users can query their points or the leaderboard.
+## Contract Testing
 
-## Testing Strategy
+### Direct Tests
 
-| Test Type | Command | Speed | Requires Studio |
-|-----------|---------|-------|-----------------|
-| **Lint** | `genvm-lint check contracts/*.py` | ~250ms | No |
-| **Direct** | `pytest tests/direct/ -v` | ~ms/test | No |
-| **Integration** | `gltest tests/integration/ -v -s` | ~min/test | Yes |
+Run:
 
-**Recommended workflow:**
-1. Lint after every contract change
-2. Run direct tests frequently during development
-3. Run integration tests before deployment to verify consensus behavior
+```bash
+pytest tests/direct/ -v
+```
 
-For AI coding agents (Claude Code, Cursor, etc.), the linter and direct tests provide the fast feedback loop needed for iterative development without requiring a running Studio instance.
+Direct tests provide fast feedback without requiring a running Studio environment.
 
-## Community
-- **[Discord](https://discord.gg/8Jm4v89VAu)**: Discussions, support, and announcements
-- **[Telegram](https://t.me/genlayer)**: Informal chats and quick updates
+### Integration Tests
 
-## Documentation
-For detailed information, see our [documentation](https://docs.genlayer.com/).
+Run:
+
+```bash
+gltest tests/integration/ -v -s
+```
+
+Integration tests verify the contract against GenLayer Studio.
+
+### Contract Linting
+
+Run:
+
+```bash
+genvm-lint check contracts/web3_research.py
+```
+
+Linting helps detect unsupported imports, nondeterministic behavior, invalid contract patterns, and other Intelligent Contract issues.
+
+## Recommended Demo Flow
+
+For a complete demonstration:
+
+1. Open the Web3 Research dashboard.
+2. Enter a Web3 project name.
+3. Enter its website.
+4. Click **Research Project**.
+5. Wait for the GenLayer research transaction.
+6. Click **Get Research**.
+7. View the verified **AI Research Result**.
+8. The **Token Explorer** automatically appears.
+9. Review live token metrics.
+10. Review the 30-day price chart.
+11. Use **Refresh** to retrieve updated market data.
+
+## Builder Program Highlights
+
+This project demonstrates several GenLayer capabilities in one application:
+
+- Intelligent Contract development
+- Web access from an Intelligent Contract
+- LLM-powered contract logic
+- Equivalence-principle based verification
+- Onchain research storage
+- Next.js integration
+- Wallet interaction through MetaMask
+- External market-data integration
+- Server-side API architecture
+- Interactive market-data visualization
+- Direct and integration testing
+
+## Deployment
+
+The Intelligent Contract is deployed on the GenLayer Studio network.
+
+### Contract
+
+```text
+0xd50bD58279aC735DB3c8A7A06579BB5b662Db989
+```
+
+### Deployment Transaction
+
+```text
+0x5350b2e714d83c95f864c2a6bd56e616d47093ba2cff094a2d5284d10adf9a2c
+```
+
+### Consensus Result
+
+```text
+MAJORITY_AGREE
+```
+
+## Repository
+
+GitHub:
+
+https://github.com/crainx25-stack/genlayer-web3-research
+
+## Future Improvements
+
+Potential future improvements include:
+
+- Historical ATH / ATL statistics when supported by the CoinMarketCap API plan
+- More advanced token analytics
+- Multiple token support per project
+- Research history and project comparison
+- Additional market indicators
+- Improved research result formatting
+- Production network deployment
+- More comprehensive automated testing
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+This project is licensed under the MIT License.
