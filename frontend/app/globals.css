@@ -512,3 +512,16 @@ wui-list-item[data-icon="onramp"] {
   padding: 0 !important;
   overflow: hidden !important;
 }
+@keyframes progress {
+  0% {
+    transform: translateX(-150%);
+  }
+
+  50% {
+    transform: translateX(150%);
+  }
+
+  100% {
+    transform: translateX(350%);
+  }
+}

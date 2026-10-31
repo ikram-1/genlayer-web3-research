@@ -22,4 +22,9 @@ __pycache__/
 /frontend/package-lock.json
 *.compiled.js
 package-lock.json
-
+.env.local
+.venv/
+builder-metamask.json
+*.backup.tsx
+*.backup.ts
+*.tsbuildinfo
