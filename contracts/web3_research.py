@@ -2,9 +2,10 @@
 
 from genlayer import *
 
+
 class Web3Research(gl.Contract):
     projects: TreeMap[str, str]
-    research_results: TreeMap[str, str]
+    verification_results: TreeMap[str, str]
 
     def __init__(self):
         pass
@@ -17,51 +18,116 @@ class Web3Research(gl.Contract):
     def get_project(self, name: str) -> str:
         return self.projects[name]
 
-    def _research_project(self, website: str) -> str:
-        def research():
+    def _verify_claim(
+        self,
+        website: str,
+        claim: str,
+        required_evidence: str,
+    ) -> str:
+
+        def verify():
             web_data = gl.nondet.web.render(
                 website,
-                mode="text"
+                mode="text",
             )
 
             task = f"""
-Analyze this Web3 project website:
+You are a Web3 project verification agent.
 
+Your task is NOT to summarize the website.
+
+You must verify a specific claim about a Web3 project using
+evidence found on its official website.
+
+OFFICIAL WEBSITE:
+{website}
+
+WEBSITE CONTENT:
 {web_data}
 
-Give a short summary of the project and explain:
+CLAIM TO VERIFY:
+{claim}
 
-1. What the project does
-2. Its main technology
-3. Its main use case
+REQUIRED EVIDENCE:
+{required_evidence}
 
-Return only plain text.
+Evaluate the claim using ONLY evidence contained in the
+provided official website content.
+
+Return ONLY valid JSON in exactly this structure:
+
+{{
+  "verdict": "VERIFIED",
+  "claim": "{claim}",
+  "evidence": "A concise description of the evidence found.",
+  "reason": "Why the evidence supports or does not support the claim."
+}}
+
+The verdict MUST be exactly one of:
+
+VERIFIED
+REJECTED
+INSUFFICIENT_EVIDENCE
+
+Rules:
+
+VERIFIED:
+Use this only when the website contains clear evidence
+supporting the claim and the required evidence is present.
+
+REJECTED:
+Use this when the website contains clear evidence that
+contradicts the claim.
+
+INSUFFICIENT_EVIDENCE:
+Use this when the website does not provide enough evidence
+to verify or reject the claim.
+
+Do not guess.
+Do not use outside knowledge.
+Do not infer facts that are not supported by the website.
 """
 
             return gl.nondet.exec_prompt(task)
 
         result = gl.eq_principle.prompt_non_comparative(
-            research,
-            task="Analyze the provided Web3 project website and return an accurate summary.",
+            verify,
+            task=(
+                "Verify a specific Web3 project claim using "
+                "evidence from the project's official website."
+            ),
             criteria=(
-                "The answer must be based only on the website content "
-                "and must accurately describe the project's purpose, "
-                "technology, and main use case."
-            )
+                "The verdict must be based only on evidence from "
+                "the official website. The result must use exactly "
+                "one of VERIFIED, REJECTED, or INSUFFICIENT_EVIDENCE. "
+                "The evidence must directly relate to the claim "
+                "and required evidence. The validator must not "
+                "invent or infer unsupported facts."
+            ),
         )
 
         return result
 
     @gl.public.write
-    def research_project(self, name: str) -> str:
+    def verify_project_claim(
+        self,
+        name: str,
+        claim: str,
+        required_evidence: str,
+    ) -> str:
+
         website = self.projects[name]
 
-        result = self._research_project(website)
+        result = self._verify_claim(
+            website,
+            claim,
+            required_evidence,
+        )
 
-        self.research_results[name] = result
+        self.verification_results[name] = result
 
         return result
 
     @gl.public.view
-    def get_research(self, name: str) -> str:
-        return self.research_results[name]
+    def get_verification(self, name: str) -> str:
+        return self.verification_results[name]

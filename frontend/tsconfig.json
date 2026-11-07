@@ -35,7 +35,10 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+ "exclude": [
+  "node_modules",
+  "app/page.backup.tsx",
+  "app/page.v1.backup.tsx",
+  "lib/contracts/Web3Research.v1.backup.ts"
+]
 }

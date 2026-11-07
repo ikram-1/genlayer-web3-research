@@ -21,9 +21,12 @@ export default function Home() {
   const [walletAddress, setWalletAddress] = useState("");
   const [projectName, setProjectName] = useState("");
   const [website, setWebsite] = useState("");
+  const [claim, setClaim] = useState("");
+  const [requiredEvidence, setRequiredEvidence] = useState("");
   const [savedProject, setSavedProject] = useState("");
   const [researchResult, setResearchResult] = useState("");
   const [loading, setLoading] = useState(false);
+
   const [tokenName, setTokenName] = useState("");
   const [tokenSymbol, setTokenSymbol] = useState("");
   const [tokenResult, setTokenResult] = useState("");
@@ -38,8 +41,11 @@ export default function Home() {
       )
     : null;
 
-    async function addProject() {
-    if (!projectName || !website || !contract) return;
+  async function addProject() {
+    if (!projectName || !website || !contract) {
+      alert("Please connect your wallet and enter the project details.");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -56,168 +62,211 @@ export default function Home() {
         feeEstimate
       );
 
-      setSavedProject(
-        `${projectName} — ${website}`
-      );
+      setSavedProject(`${projectName} — ${website}`);
     } catch (error) {
       console.error(error);
-      alert("Failed to add project");
-        } finally {
+      alert("Failed to add project.");
+    } finally {
       setLoading(false);
     }
   }
-    async function getResearch() {
-  if (!projectName || !contract) return;
 
-  try {
-    setLoading(true);
+  async function getVerification() {
+    if (!projectName || !contract) {
+      alert("Please enter the project name and connect your wallet.");
+      return;
+    }
 
-    const research = await contract.getResearch(projectName);
+    try {
+      setLoading(true);
 
-    console.log("GET RESEARCH RESULT:", research);
+      const verification =
+        await contract.getVerification(projectName);
 
-    setResearchResult(research);
-    setShowTokenExplorer(true);
-    setTimeout(() => {
-  document
-    .getElementById("token-explorer")
-    ?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-}, 300);
-    
-    } catch (error: any) {
-      console.error("GET RESEARCH ERROR:", error);
-      console.error(
-        "GET RESEARCH ERROR MESSAGE:",
-        error?.message
+      console.log(
+        "GET VERIFICATION RESULT:",
+        verification
       );
+
+      setResearchResult(verification);
+    } catch (error: any) {
       console.error(
-        "GET RESEARCH ERROR FULL:",
-        JSON.stringify(error, null, 2)
+        "GET VERIFICATION ERROR:",
+        error
       );
 
       alert(
         error?.message ||
-          "Failed to get research result. Check the browser console."
+          "Failed to get verification result. Check the browser console."
       );
     } finally {
       setLoading(false);
     }
-    }
-   // getResearch ends
+  }
 
-
-async function exploreToken() {
-  if (!tokenName || !tokenSymbol) return;
-
-  try {
-    setTokenResult("Loading live token data...");
-
-    const response = await fetch(
-      `/api/token?symbol=${tokenSymbol.toUpperCase()}`
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data?.error || "Token data request failed");
+  async function verifyProjectClaim() {
+    if (
+      !projectName ||
+      !claim ||
+      !requiredEvidence ||
+      !contract
+    ) {
+      alert(
+        "Please enter the project name, claim, required evidence, and connect your wallet."
+      );
+      return;
     }
 
-    if (!data.found) {
-  throw new Error(
-    data.message || "Token market data is currently unavailable."
-  );
-}
+    try {
+      setLoading(true);
+      setResearchResult("");
 
-const token = data.token;
-setTokenHistory(
-  (data.history || []).map((item: any) => ({
-    date: new Date(item.timestamp).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    price: item.quote?.USD?.price ?? null,
-  }))
-);
+      const receipt =
+        await contract.verifyProjectClaim(
+          projectName,
+          claim,
+          requiredEvidence
+        );
 
-if (!token) {
-  throw new Error("Token data not available.");
-}
+      console.log(
+        "VERIFICATION SUCCESS:",
+        receipt
+      );
 
-    const quote = token.quote?.USD;
+      setResearchResult(
+        "Verification transaction completed successfully. Click Get Verification to load the validator verdict."
+      );
+    } catch (error: any) {
+      console.error(
+        "VERIFICATION ERROR:",
+        error
+      );
 
-    setTokenResult(
-      `Token: ${token.name}
+      const message =
+        error?.message ||
+        "Verification transaction failed.";
+
+      if (message.includes("WEBSITE_ACCESS_DENIED")) {
+        alert(
+          "Website Access Denied\n\nThe project's website is blocking GenLayer's web renderer."
+        );
+      } else if (
+        message.includes("WEBSITE_NOT_FOUND")
+      ) {
+        alert(
+          "Website Not Found\n\nThe project's website returned HTTP 404. Please check the URL."
+        );
+      } else if (
+        message.includes("WEBSITE_SERVER_ERROR")
+      ) {
+        alert(
+          "Website Server Error\n\nThe project's website returned a server error."
+        );
+      } else if (
+        message.includes("WEBSITE_UNREACHABLE")
+      ) {
+        alert(
+          "Website Unreachable\n\nThe project's website could not be reached."
+        );
+      } else {
+        alert(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function exploreToken() {
+    if (!tokenName || !tokenSymbol) {
+      return;
+    }
+
+    try {
+      setTokenResult("Loading live token data...");
+
+      const response = await fetch(
+        `/api/token?symbol=${tokenSymbol.toUpperCase()}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Token data request failed."
+        );
+      }
+
+      if (!data.found) {
+        throw new Error(
+          data.message ||
+            "Token market data is currently unavailable."
+        );
+      }
+
+      const token = data.token;
+
+      setTokenHistory(
+        (data.history || []).map(
+          (item: any) => ({
+            date: new Date(
+              item.timestamp
+            ).toLocaleDateString(
+              "en-US",
+              {
+                month: "short",
+                day: "numeric",
+              }
+            ),
+            price:
+              item.quote?.USD?.price ??
+              null,
+          })
+        )
+      );
+
+      if (!token) {
+        throw new Error(
+          "Token data not available."
+        );
+      }
+
+      const quote = token.quote?.USD;
+
+      setTokenResult(
+        `Token: ${token.name}
 Symbol: ${token.symbol}
 Rank: #${token.cmc_rank ?? "N/A"}
-Current Price: $${quote?.price?.toFixed(6) ?? "N/A"}
-24h Change: ${quote?.percent_change_24h?.toFixed(2) ?? "N/A"}%
-Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
-24h Volume: $${quote?.volume_24h?.toLocaleString() ?? "N/A"}`
-    );
-  } catch (error) {
-    console.error("Token Explorer Error:", error);
-
-    setTokenResult(
-      error instanceof Error
-        ? error.message
-        : "Unable to fetch live token data."
-    );
-  }
-}
-
-    async function researchProject() {
-  if (!projectName || !contract) return;
-
-  try {
-    setLoading(true);
-    setResearchResult("");
-
-    const receipt = await contract.researchProject(projectName);
-
-    console.log("RESEARCH SUCCESS:", receipt);
-
-    setResearchResult(
-      "Research transaction completed successfully. Click Get Research to load the verified result."
-    );
-  } catch (error: any) {
-    console.error("RESEARCH ERROR:", error);
-
-    const message =
-      error?.message || "Research transaction failed";
-
-    if (message.includes("WEBSITE_ACCESS_DENIED")) {
-      alert(
-        "⚠️ Website Access Denied\n\n" +
-        "The project's website is blocking GenLayer's web renderer."
+Current Price: $${
+          quote?.price?.toFixed(6) ?? "N/A"
+        }
+24h Change: ${
+          quote?.percent_change_24h?.toFixed(2) ??
+          "N/A"
+        }%
+Market Cap: $${
+          quote?.market_cap?.toLocaleString() ??
+          "N/A"
+        }
+24h Volume: $${
+          quote?.volume_24h?.toLocaleString() ??
+          "N/A"
+        }`
       );
-    } else if (message.includes("WEBSITE_NOT_FOUND")) {
-      alert(
-        "❌ Website Not Found\n\n" +
-        "The project's website returned HTTP 404. Please check the URL."
+    } catch (error) {
+      console.error(
+        "Token Explorer Error:",
+        error
       );
-    } else if (message.includes("WEBSITE_SERVER_ERROR")) {
-      alert(
-        "⚠️ Website Server Error\n\n" +
-        "The project's website is currently returning a server error. Please try again later."
-      );
-    } else if (message.includes("WEBSITE_UNREACHABLE")) {
-      alert(
-        "❌ Website Unreachable\n\n" +
-        "The project's website could not be reached. Please check the URL."
-      );
-    } else {
-      alert(
-        "❌ Research Failed\n\n" +
-        message
+
+      setTokenResult(
+        error instanceof Error
+          ? error.message
+          : "Unable to fetch live token data."
       );
     }
-  } finally {
-    setLoading(false);
   }
-}
+
   return (
     <main className="min-h-screen bg-[#050509] text-white">
       {/* Header */}
@@ -242,11 +291,15 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
           <button
             onClick={async () => {
               try {
-                const address = await connectMetaMask();
+                const address =
+                  await connectMetaMask();
+
                 setWalletAddress(address);
               } catch (error) {
                 console.error(error);
-                alert("Wallet connection failed");
+                alert(
+                  "Wallet connection failed."
+                );
               }
             }}
             className="rounded-lg border border-purple-500/40 bg-purple-600/20 px-5 py-2 text-sm font-medium text-purple-200 transition hover:bg-purple-600/30"
@@ -269,12 +322,13 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
           </p>
 
           <h2 className="text-5xl font-bold tracking-tight">
-            Web3 Project Research
+            Web3 Project Verification
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-gray-400">
-            Add a Web3 project and let a GenLayer intelligent
-            contract research its website using web data and AI.
+            Submit a specific Web3 project claim and
+            let GenLayer validators verify it using
+            evidence from the project's official website.
           </p>
         </div>
       </section>
@@ -283,11 +337,13 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
       <section className="mx-auto max-w-3xl px-6">
         <div className="rounded-2xl border border-white/10 bg-[#0d0d18] p-8 shadow-2xl">
           <h3 className="text-2xl font-semibold">
-            Research a Web3 Project
+            Verify a Web3 Project Claim
           </h3>
 
           <p className="mt-2 text-sm text-gray-400">
-            Enter the project name and official website.
+            Enter the project name, official website,
+            specific claim, and evidence required to
+            verify that claim.
           </p>
 
           <div className="mt-8 space-y-5">
@@ -301,7 +357,9 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
                 type="text"
                 value={projectName}
                 onChange={(e) =>
-                  setProjectName(e.target.value)
+                  setProjectName(
+                    e.target.value
+                  )
                 }
                 placeholder="e.g. GenLayer"
                 className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-purple-500"
@@ -325,72 +383,121 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
               />
             </div>
 
+            {/* Claim */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Claim to Verify
+              </label>
+
+              <textarea
+                value={claim}
+                onChange={(e) =>
+                  setClaim(e.target.value)
+                }
+                placeholder="Example: This project operates as an Ethereum-compatible Layer 2."
+                className="min-h-[110px] w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-purple-500"
+              />
+            </div>
+
+            {/* Required Evidence */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Required Evidence
+              </label>
+
+              <textarea
+                value={requiredEvidence}
+                onChange={(e) =>
+                  setRequiredEvidence(
+                    e.target.value
+                  )
+                }
+                placeholder="Example: Official technical documentation describing the Layer 2 architecture and Ethereum compatibility."
+                className="min-h-[110px] w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-purple-500"
+              />
+            </div>
+
             {/* Buttons */}
-<div className="grid gap-3 pt-2 sm:grid-cols-3">
-  {/* Add Project */}
-  <button
-    onClick={addProject}
-    disabled={
-      !projectName ||
-      !website ||
-      !walletAddress ||
-      loading
-    }
-    className="group rounded-xl bg-purple-600 px-5 py-3.5 font-semibold text-white shadow-lg shadow-purple-950/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-purple-500 hover:shadow-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-  >
-    <span className="flex items-center justify-center gap-2">
-      <span>＋</span>
-      Add Project
-    </span>
-  </button>
+            <div className="grid gap-3 pt-2 sm:grid-cols-3">
+              {/* Add Project */}
+              <button
+                onClick={addProject}
+                disabled={
+                  !projectName ||
+                  !website ||
+                  !walletAddress ||
+                  loading
+                }
+                className="group rounded-xl bg-purple-600 px-5 py-3.5 font-semibold text-white shadow-lg shadow-purple-950/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-purple-500 hover:shadow-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span>+</span>
+                  Add Project
+                </span>
+              </button>
 
-  {/* Research Project */}
-  <button
-    onClick={researchProject}
-    disabled={
-      !projectName ||
-      !walletAddress ||
-      loading
-    }
-    className="group rounded-xl border border-purple-400/30 bg-purple-500/10 px-5 py-3.5 font-semibold text-purple-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-400/50 hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-  >
-    <span className="flex items-center justify-center gap-2">
-      <span>🧠</span>
-      {loading ? "Researching..." : "Research Project"}
-    </span>
-  </button>
+              {/* Verify Claim */}
+              <button
+                onClick={
+                  verifyProjectClaim
+                }
+                disabled={
+                  !projectName ||
+                  !claim ||
+                  !requiredEvidence ||
+                  !walletAddress ||
+                  loading
+                }
+                className="group rounded-xl border border-purple-400/30 bg-purple-500/10 px-5 py-3.5 font-semibold text-purple-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-400/50 hover:bg-purple-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span>AI</span>
+                  {loading
+                    ? "Verifying..."
+                    : "Verify Claim"}
+                </span>
+              </button>
 
-  {/* Get Research */}
-  <button
-    onClick={getResearch}
-    disabled={
-      !projectName ||
-      !walletAddress ||
-      loading
-    }
-    className="group rounded-xl border border-blue-400/30 bg-blue-500/10 px-5 py-3.5 font-semibold text-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400/50 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-  >
-    <span className="flex items-center justify-center gap-2">
-      <span>📄</span>
-      Get Research
-    </span>
-  </button>
-</div>
+              {/* Get Verification */}
+              <button
+                onClick={
+                  getVerification
+                }
+                disabled={
+                  !projectName ||
+                  !walletAddress ||
+                  loading
+                }
+                className="group rounded-xl border border-blue-400/30 bg-blue-500/10 px-5 py-3.5 font-semibold text-blue-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-400/50 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  <span>Result</span>
+                  Get Verification
+                </span>
+              </button>
+            </div>
 
             {/* Research Progress */}
             {loading && (
               <div className="mt-3 space-y-2">
                 <div className="flex items-center justify-between text-xs text-purple-300/80">
-                  <span>🔄 Researching...</span>
-                  <span>Processing</span>
+                  <span>
+                    Verification in progress...
+                  </span>
+
+                  <span>
+                    Processing
+                  </span>
                 </div>
 
                 <div className="h-2 w-full overflow-hidden rounded-full bg-purple-500/10">
-                  <div className="h-full w-1/3 rounded-full bg-purple-400 animate-[progress_1.5s_ease-in-out_infinite]" />
+                  <div className="h-full w-1/3 animate-[progress_1.5s_ease-in-out_infinite] rounded-full bg-purple-400" />
                 </div>
 
                 <p className="text-xs text-purple-300/60">
-                  Analyzing website &amp; consensus...
+                  GenLayer validators are analyzing
+                  the official website and reaching
+                  consensus...
                 </p>
               </div>
             )}
@@ -400,7 +507,7 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
           {savedProject && (
             <div className="mt-8 rounded-xl border border-green-500/20 bg-green-500/5 p-5">
               <p className="text-xs font-semibold uppercase tracking-wider text-green-400">
-                Project Retrieved
+                Project Saved
               </p>
 
               <p className="mt-2 text-sm text-gray-200">
@@ -409,362 +516,517 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
             </div>
           )}
 
-          {/* Research Result */}
-{researchResult && (
-  <div className="mt-6 overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-[#0d0d18] to-blue-500/5 shadow-lg shadow-purple-950/20">
-
-    {/* Header */}
-    <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-lg">
-          🧠
-        </div>
-
-        <div>
-          <p className="text-sm font-semibold text-white">
-            AI Research Result
-          </p>
-
-          <p className="text-xs text-gray-500">
-            Verified through GenLayer
-          </p>
-        </div>
-      </div>
-
-      <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
-        Onchain
-      </span>
-    </div>
-    {/* Token / Coin Explorer */}
-    {showTokenExplorer && (
-<div className="mt-6 overflow-hidden rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 via-[#0d0d18] to-orange-500/5 shadow-lg shadow-yellow-950/10">
-
-  <div className="border-b border-white/10 px-5 py-4">
-    <div className="flex items-center gap-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-500/15 text-lg">
-        🪙
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between gap-4">
-  <div>
-    <p className="text-sm font-semibold text-white">
-      Token Explorer
-    </p>
-    <p className="mt-1 text-xs text-gray-500">
-      Live market data from CoinMarketCap
-    </p>
-  </div>
-
-  <button
-    type="button"
-    onClick={exploreToken}
-    className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-xs font-medium text-yellow-300 transition hover:bg-yellow-500/20"
-  >
-    ↻ Refresh
-  </button>
-</div>
-
-        <p className="text-xs text-gray-500">
-          Explore detailed information about a Web3 token or coin
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div className="space-y-5 px-5 py-5">
-
-    {/* Token Name */}
-    <div>
-      <label className="mb-2 block text-sm font-medium text-gray-300">
-        Token / Coin Name
-      </label>
-
-      <input
-        type="text"
-        value={tokenName}
-        onChange={(e) => setTokenName(e.target.value)}
-        placeholder="e.g. GenLayer"
-        className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-yellow-500"
-      />
-    </div>
-
-    {/* Token Symbol */}
-    <div>
-      <label className="mb-2 block text-sm font-medium text-gray-300">
-        Symbol
-      </label>
-
-      <input
-        type="text"
-        value={tokenSymbol}
-        onChange={(e) => setTokenSymbol(e.target.value)}
-        placeholder="e.g. GEN"
-        className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-yellow-500"
-      />
-    </div>
-
-    {/* Explore Button */}
-    <button
-      onClick={exploreToken}
-      disabled={!tokenName || !tokenSymbol}
-      className="w-full rounded-xl border border-yellow-400/30 bg-yellow-500/10 px-5 py-3.5 font-semibold text-yellow-200 transition-all hover:-translate-y-0.5 hover:border-yellow-400/50 hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-    >
-      <span className="flex items-center justify-center gap-2">
-        🔍
-        Explore Token
-      </span>
-    </button>
-    {showTokenExplorer && (
-  <div
-    id="token-explorer"
-    className="mt-6 overflow-hidden rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 via-[#0d0d18] to-orange-500/5 shadow-lg shadow-yellow-950/20"
-    >
-    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-yellow-400">
-      Token Explorer Result
-    </p>
-    <div className="mb-4">
-  <p className="text-xl font-bold text-white">
-    {tokenResult.match(/Token: ([^\n]+)/)?.[1] ?? "Token"}
-    <span className="ml-2 text-sm font-medium text-gray-400">
-      ({tokenResult.match(/Symbol: ([^\n]+)/)?.[1] ?? "N/A"})
-    </span>
-  </p>
-  <p className="mt-1 text-xs text-gray-500">
-    Live market data from CoinMarketCap
-  </p>
-</div>
-    <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
-    <p className="text-xs text-gray-500">Rank</p>
-    <p className="mt-1 break-words text-base font-bold text-white">
-      {tokenResult.match(/Rank: #([^\n]+)/)?.[1] ?? "N/A"}
-    </p>
-  </div>
-
-  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
-    <p className="text-xs text-gray-500">Price</p>
-    <p className="mt-1 break-words text-base font-bold text-white">
-      {tokenResult.match(/Current Price: \$([^\n]+)/)?.[1]
-        ? `$${tokenResult.match(/Current Price: \$([^\n]+)/)?.[1]}`
-        : "N/A"}
-    </p>
-  </div>
-
- <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
-  <p className="text-xs text-gray-500">24h Change</p>
-  <p
-    className={`mt-1 text-base font-bold ${
-      (() => {
-        const change = Number(
-          tokenResult.match(/24h Change: (-?[\d.]+)/)?.[1]
-        );
-
-        if (change > 0) return "text-green-400";
-        if (change < 0) return "text-red-400";
-        return "text-gray-300";
-      })()
-    }`}
-  >
-    {tokenResult.match(/24h Change: ([^\n]+)/)?.[1] ?? "N/A"}
-  </p>
-</div>
-
-  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
-    <p className="text-xs text-gray-500">Market Cap</p>
-    <p className="mt-1 break-words text-base font-bold text-white">
-      {tokenResult.match(/Market Cap: \$([^\n]+)/)?.[1]
-        ? `$${tokenResult.match(/Market Cap: \$([^\n]+)/)?.[1]}`
-        : "N/A"}
-    </p>
-  </div>
-
-  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
-    <p className="text-xs text-gray-500">24h Volume</p>
-    <p className="mt-1 break-words text-base font-bold text-white">
-      {tokenResult.match(/24h Volume: \$([^\n]+)/)?.[1]
-        ? `$${tokenResult.match(/24h Volume: \$([^\n]+)/)?.[1]}`
-        : "N/A"}
-    </p>
-  </div>
-</div>
-    {tokenHistory.length > 0 && (
-  <div className="mt-5 h-72 w-full">
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={tokenHistory}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
-        <YAxis
-  tickFormatter={(value) => `$${value.toFixed(4)}`}
-  tick={{ fill: "#d1d5db", fontSize: 12 }}
-  width={65}
-/>
-        <Tooltip
-  contentStyle={{
-    backgroundColor: "#111827",
-    border: "1px solid #374151",
-    borderRadius: "8px",
-    color: "#f3f4f6",
-  }}
-  labelStyle={{ color: "#d1d5db" }}
-  formatter={(value: any) =>
-    `$${Number(value).toFixed(6)}`
-  }
-/>
-        <Line
-          type="monotone"
-          dataKey="price"
-          stroke="#facc15"
-          strokeWidth={2}
-          dot={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  </div>
-)}
-  </div>
-)}
-
-  </div>
-</div>
-)}
-
-    {/* Research Content */}
-    <div className="px-5 py-5">
-
-      <div className="mb-5 rounded-xl border border-white/5 bg-black/20 px-4 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400">
-          Project
-        </p>
-
-        <p className="mt-1 text-sm font-medium text-gray-200">
-          {projectName}
-        </p>
-      </div>
-
-      {(() => {
-        try {
-          const data = JSON.parse(researchResult);
-
-          const summary = data?.summary;
-
-          return (
-            <div className="space-y-6">
-
-              {/* Purpose */}
-              {summary?.purpose && (
-                <div>
-                  <h4 className="mb-2 text-lg font-semibold text-white">
-                    🎯 Purpose
-                  </h4>
-
-                  <p className="text-sm leading-7 text-gray-300">
-                    {summary.purpose}
-                  </p>
-                </div>
-              )}
-
-              {/* Technology */}
-              {summary?.technology && (
-                <div>
-                  <h4 className="mb-3 text-lg font-semibold text-white">
-                    ⚙️ Technology
-                  </h4>
-
-                  <div className="rounded-xl border border-white/5 bg-black/20 p-4">
-
-                    {summary.technology.network && (
-                      <p className="mb-4 text-sm leading-7 text-gray-300">
-                        {summary.technology.network}
-                      </p>
-                    )}
-
-                    {summary.technology.key_components && (
-                      <div className="grid gap-3">
-                        {summary.technology.key_components.map(
-                          (component: any, index: number) => (
-                            <div
-                              key={index}
-                              className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
-                            >
-                              <h5 className="font-semibold text-purple-300">
-                                {component.name}
-                              </h5>
-
-                              <p className="mt-1 text-sm leading-6 text-gray-400">
-                                {component.description}
-                              </p>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
+          {/* Verification Result */}
+          {researchResult && (
+            <div className="mt-6 overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-[#0d0d18] to-blue-500/5 shadow-lg shadow-purple-950/20">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-lg">
+                    V
                   </div>
-                </div>
-              )}
 
-              {/* Main Use Cases */}
-              {summary?.main_use_case && (
-                <div>
-                  <h4 className="mb-3 text-lg font-semibold text-white">
-                    🚀 Main Use Cases
-                  </h4>
+                  <div>
+                    <p className="text-sm font-semibold text-white">
+                      Verification Result
+                    </p>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {summary.main_use_case.map(
-                      (useCase: any, index: number) => (
-                        <div
-                          key={index}
-                          className="rounded-xl border border-blue-500/10 bg-blue-500/5 p-4"
-                        >
-                          <h5 className="font-semibold text-blue-300">
-                            {useCase.scenario}
-                          </h5>
-
-                          <p className="mt-1 text-sm leading-6 text-gray-400">
-                            {useCase.description}
-                          </p>
-                        </div>
-                      )
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Value Proposition */}
-              {summary?.value_proposition && (
-                <div>
-                  <h4 className="mb-2 text-lg font-semibold text-white">
-                    💡 Value Proposition
-                  </h4>
-
-                  <div className="rounded-xl border border-green-500/10 bg-green-500/5 p-4">
-                    <p className="text-sm leading-7 text-gray-300">
-                      {summary.value_proposition}
+                    <p className="text-xs text-gray-500">
+                      Verified through GenLayer
                     </p>
                   </div>
                 </div>
-              )}
 
+                <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
+                  Onchain
+                </span>
+              </div>
+
+              {/* Research Content */}
+              <div className="px-5 py-5">
+                <div className="mb-5 rounded-xl border border-white/5 bg-black/20 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400">
+                    Project
+                  </p>
+
+                  <p className="mt-1 text-sm font-medium text-white">
+                    {projectName}
+                  </p>
+
+                  <p className="mt-1 break-all text-xs text-gray-500">
+                    {website}
+                  </p>
+                </div>
+
+                {(() => {
+                  try {
+                    const data =
+                      JSON.parse(
+                        researchResult
+                      );
+
+                    const verdict =
+                      data?.verdict;
+
+                    const claimResult =
+                      data?.claim;
+
+                    const evidence =
+                      data?.evidence;
+
+                    const reason =
+                      data?.reason;
+
+                    const verdictConfig =
+                      {
+                        VERIFIED: {
+                          label: "VERIFIED",
+                          consequence:
+                            "Approved",
+                          icon: "✓",
+                          className:
+                            "border-green-500/30 bg-green-500/10 text-green-300",
+                        },
+
+                        REJECTED: {
+                          label: "REJECTED",
+                          consequence:
+                            "Flagged",
+                          icon: "✕",
+                          className:
+                            "border-red-500/30 bg-red-500/10 text-red-300",
+                        },
+
+                        INSUFFICIENT_EVIDENCE:
+                          {
+                            label:
+                              "INSUFFICIENT EVIDENCE",
+                            consequence:
+                              "More Evidence Required",
+                            icon: "!",
+                            className:
+                              "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
+                          },
+                      } as const;
+
+                    const config =
+                      verdictConfig[
+                        verdict as keyof typeof verdictConfig
+                      ];
+
+                    if (!config) {
+                      return (
+                        <p className="whitespace-pre-wrap text-sm leading-7 text-gray-300">
+                          {researchResult}
+                        </p>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {/* Verdict */}
+                        <div
+                          className={`rounded-2xl border p-5 ${config.className}`}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                                Validator Verdict
+                              </p>
+
+                              <h3 className="mt-1 text-2xl font-bold">
+                                {config.label}
+                              </h3>
+                            </div>
+
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-current text-2xl font-bold">
+                              {config.icon}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 rounded-xl border border-current/10 bg-black/20 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+                              Application Consequence
+                            </p>
+
+                            <p className="mt-1 text-sm font-semibold">
+                              {config.consequence}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Claim */}
+                        {claimResult && (
+                          <div>
+                            <h4 className="mb-2 text-lg font-semibold text-white">
+                              Claim Verified
+                            </h4>
+
+                            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                              <p className="text-sm leading-7 text-gray-300">
+                                {claimResult}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Evidence */}
+                        {evidence && (
+                          <div>
+                            <h4 className="mb-2 text-lg font-semibold text-white">
+                              Evidence Found
+                            </h4>
+
+                            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                              <p className="text-sm leading-7 text-gray-300">
+                                {evidence}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Reason */}
+                        {reason && (
+                          <div>
+                            <h4 className="mb-2 text-lg font-semibold text-white">
+                              Validator Reason
+                            </h4>
+
+                            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                              <p className="text-sm leading-7 text-gray-300">
+                                {reason}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } catch {
+                    return (
+                      <p className="whitespace-pre-wrap text-sm leading-7 text-gray-300">
+                        {researchResult}
+                      </p>
+                    );
+                  }
+                })()}
+              </div>
             </div>
-          );
-        } catch {
-          return (
-            <p className="whitespace-pre-wrap text-sm leading-7 text-gray-300">
-              {researchResult}
-            </p>
-          );
-        }
-      })()}
+          )}
+        </div>
+      </section>
 
-    </div>
-  </div>
-)}
+      {/* Token Explorer */}
+      <section className="mx-auto max-w-3xl px-6 pb-4">
+        <div className="mt-6 overflow-hidden rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/10 via-[#0d0d18] to-orange-500/5 shadow-lg shadow-yellow-950/10">
+          {/* Token Explorer Header */}
+          <div className="border-b border-white/10 px-5 py-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-500/15 text-lg">
+                  $
+                </div>
 
-  </div>
-   </section>
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    Token Explorer
+                  </p>
 
-      {/* How It Works */}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Live market data from CoinMarketCap
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={
+                  exploreToken
+                }
+                disabled={
+                  !tokenName ||
+                  !tokenSymbol
+                }
+                className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-xs font-medium text-yellow-300 transition hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-5 px-5 py-5">
+            {/* Token Name */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Token / Coin Name
+              </label>
+
+              <input
+                type="text"
+                value={tokenName}
+                onChange={(e) =>
+                  setTokenName(
+                    e.target.value
+                  )
+                }
+                placeholder="e.g. GenLayer"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-yellow-500"
+              />
+            </div>
+
+            {/* Token Symbol */}
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Symbol
+              </label>
+
+              <input
+                type="text"
+                value={tokenSymbol}
+                onChange={(e) =>
+                  setTokenSymbol(
+                    e.target.value
+                  )
+                }
+                placeholder="e.g. GEN"
+                className="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-white outline-none transition focus:border-yellow-500"
+              />
+            </div>
+
+            {/* Explore Button */}
+            <button
+              onClick={
+                exploreToken
+              }
+              disabled={
+                !tokenName ||
+                !tokenSymbol
+              }
+              className="w-full rounded-xl border border-yellow-400/30 bg-yellow-500/10 px-5 py-3.5 font-semibold text-yellow-200 transition-all hover:-translate-y-0.5 hover:border-yellow-400/50 hover:bg-yellow-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <span className="flex items-center justify-center gap-2">
+                Search
+                Explore Token
+              </span>
+            </button>
+
+            {/* Token Result */}
+            {tokenResult && (
+              <div
+                id="token-explorer"
+                className="mt-6 overflow-hidden rounded-2xl border border-yellow-500/20 bg-black/20 p-5"
+              >
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-yellow-400">
+                  Token Explorer Result
+                </p>
+
+                <div className="mb-4">
+                  <p className="text-xl font-bold text-white">
+                    {tokenResult.match(
+                      /Token: ([^\n]+)/
+                    )?.[1] ??
+                      "Token"}
+
+                    <span className="ml-2 text-sm font-medium text-gray-400">
+                      (
+                      {tokenResult.match(
+                        /Symbol: ([^\n]+)/
+                      )?.[1] ??
+                        "N/A"}
+                      )
+                    </span>
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    Live market data from CoinMarketCap
+                  </p>
+                </div>
+
+                <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {/* Rank */}
+                  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-gray-500">
+                      Rank
+                    </p>
+
+                    <p className="mt-1 break-words text-base font-bold text-white">
+                      {tokenResult.match(
+                        /Rank: #([^\n]+)/
+                      )?.[1] ??
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  {/* Price */}
+                  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-gray-500">
+                      Price
+                    </p>
+
+                    <p className="mt-1 break-words text-base font-bold text-white">
+                      {tokenResult.match(
+                        /Current Price: \$([^\n]+)/
+                      )?.[1]
+                        ? `$${tokenResult.match(
+                            /Current Price: \$([^\n]+)/
+                          )?.[1]}`
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  {/* 24h Change */}
+                  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-gray-500">
+                      24h Change
+                    </p>
+
+                    <p
+                      className={`mt-1 text-base font-bold ${
+                        (() => {
+                          const change =
+                            Number(
+                              tokenResult.match(
+                                /24h Change: (-?[\d.]+)/
+                              )?.[1]
+                            );
+
+                          if (
+                            change > 0
+                          ) {
+                            return "text-green-400";
+                          }
+
+                          if (
+                            change < 0
+                          ) {
+                            return "text-red-400";
+                          }
+
+                          return "text-gray-300";
+                        })()
+                      }`}
+                    >
+                      {tokenResult.match(
+                        /24h Change: ([^\n]+)/
+                      )?.[1] ??
+                        "N/A"}
+                    </p>
+                  </div>
+
+                  {/* Market Cap */}
+                  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-gray-500">
+                      Market Cap
+                    </p>
+
+                    <p className="mt-1 break-words text-base font-bold text-white">
+                      {tokenResult.match(
+                        /Market Cap: \$([^\n]+)/
+                      )?.[1]
+                        ? `$${tokenResult.match(
+                            /Market Cap: \$([^\n]+)/
+                          )?.[1]}`
+                        : "N/A"}
+                    </p>
+                  </div>
+
+                  {/* Volume */}
+                  <div className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-xs text-gray-500">
+                      24h Volume
+                    </p>
+
+                    <p className="mt-1 break-words text-base font-bold text-white">
+                      {tokenResult.match(
+                        /24h Volume: \$([^\n]+)/
+                      )?.[1]
+                        ? `$${tokenResult.match(
+                            /24h Volume: \$([^\n]+)/
+                          )?.[1]}`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Price Chart */}
+                {tokenHistory.length >
+                  0 && (
+                  <div className="mt-5 h-72 w-full">
+                    <ResponsiveContainer
+                      width="100%"
+                      height="100%"
+                    >
+                      <LineChart
+                        data={
+                          tokenHistory
+                        }
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                        />
+
+                        <XAxis
+                          dataKey="date"
+                        />
+
+                        <YAxis
+                          tickFormatter={(
+                            value
+                          ) =>
+                            `$${Number(
+                              value
+                            ).toFixed(
+                              4
+                            )}`
+                          }
+                          tick={{
+                            fill: "#d1d5db",
+                            fontSize: 12,
+                          }}
+                          width={65}
+                        />
+
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor:
+                              "#111827",
+                            border:
+                              "1px solid #374151",
+                            borderRadius:
+                              "8px",
+                            color:
+                              "#f3f4f6",
+                          }}
+                          labelStyle={{
+                            color:
+                              "#d1d5db",
+                          }}
+                          formatter={(
+                            value: any
+                          ) =>
+                            `$${Number(
+                              value
+                            ).toFixed(
+                              6
+                            )}`
+                          }
+                        />
+
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#facc15"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* How It Works */}
       <section className="mx-auto max-w-6xl px-6 py-20">
@@ -773,47 +1035,60 @@ Market Cap: $${quote?.market_cap?.toLocaleString() ?? "N/A"}
         </h3>
 
         <div className="mt-8 grid gap-6 md:grid-cols-3">
+          {/* Step 1 */}
           <div className="rounded-2xl border border-white/10 bg-[#0d0d18] p-6">
             <div className="text-2xl font-bold text-purple-400">
               01
             </div>
 
             <h4 className="mt-4 text-lg font-semibold">
-              Add a Project
+              Submit Project & Claim
             </h4>
 
             <p className="mt-2 text-sm leading-6 text-gray-400">
-              Store a Web3 project name and its official website.
+              Submit a project, its official
+              website, the claim to verify,
+              and the evidence required to
+              support that claim.
             </p>
           </div>
 
+          {/* Step 2 */}
           <div className="rounded-2xl border border-white/10 bg-[#0d0d18] p-6">
             <div className="text-2xl font-bold text-purple-400">
               02
             </div>
 
             <h4 className="mt-4 text-lg font-semibold">
-              Research Onchain
+              Verify With GenLayer
             </h4>
 
             <p className="mt-2 text-sm leading-6 text-gray-400">
-              The GenLayer intelligent contract reads web data
-              and processes it with an AI model.
+              GenLayer validators retrieve
+              evidence from the official
+              website and independently
+              evaluate whether the submitted
+              claim is supported, contradicted,
+              or lacks sufficient evidence.
             </p>
           </div>
 
+          {/* Step 3 */}
           <div className="rounded-2xl border border-white/10 bg-[#0d0d18] p-6">
             <div className="text-2xl font-bold text-purple-400">
               03
             </div>
 
             <h4 className="mt-4 text-lg font-semibold">
-              Get the Result
+              Apply the Verdict
             </h4>
 
             <p className="mt-2 text-sm leading-6 text-gray-400">
-              Validators reach an equivalent result using
-              GenLayer&apos;s Equivalence Principle.
+              GenLayer validators reach
+              consensus on the evidence-based
+              verdict, which determines whether
+              the claim is approved, flagged,
+              or requires more evidence.
             </p>
           </div>
         </div>

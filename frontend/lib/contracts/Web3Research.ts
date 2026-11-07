@@ -56,10 +56,10 @@ class Web3Research {
     });
   }
 
-  async getResearch(name: string): Promise<string> {
+  async getVerification(name: string): Promise<string> {
     return await this.client.readContract({
       address: this.contractAddress,
-      functionName: "get_research",
+      functionName: "get_verification",
       args: [name],
     });
   }
@@ -103,108 +103,96 @@ class Web3Research {
     });
   }
 
-    async researchProject(
-  name: string,
-  feePreset?: FeePresetEstimate
-): Promise<any> {
-  const fees = feePresetToTransactionFees(feePreset);
+  async verifyProjectClaim(
+    name: string,
+    claim: string,
+    requiredEvidence: string,
+    feePreset?: FeePresetEstimate
+  ): Promise<any> {
+    const fees = feePresetToTransactionFees(feePreset);
 
-  const txHash = await this.client.writeContract({
-    address: this.contractAddress,
-    functionName: "research_project",
-    args: [name],
-    value: BigInt(0),
-    ...(fees ? { fees } : {}),
-  });
-
-  console.log("RESEARCH TX HASH:", txHash);
-
-  try {
-    const receipt = await this.client.waitForTransactionReceipt({
-      hash: txHash,
-      status: "ACCEPTED" as any,
-      retries: 120,
-      interval: 5000,
+    const txHash = await this.client.writeContract({
+      address: this.contractAddress,
+      functionName: "verify_project_claim",
+      args: [name, claim, requiredEvidence],
+      value: BigInt(0),
+      ...(fees ? { fees } : {}),
     });
 
-    console.log("RESEARCH RECEIPT:", receipt);
-    console.log("STATUS NAME:", receipt?.status_name);
-    console.log("RESULT NAME:", receipt?.result_name);
-    console.log("CONSENSUS DATA:", receipt?.consensus_data);
+    console.log("VERIFICATION TX HASH:", txHash);
 
-    /*
-     * IMPORTANT:
-     * Do not search the entire receipt for numbers such as
-     * "500", "403", or "404".
-     *
-     * Receipts contain many unrelated numeric values.
-     *
-     * If the transaction is ACCEPTED and the consensus result
-     * is MAJORITY_AGREE, the research transaction succeeded.
-     */
-    if (
-      receipt?.status_name === "ACCEPTED" &&
-      receipt?.result_name === "MAJORITY_AGREE"
-    ) {
-      return receipt;
-    }
+    try {
+      const receipt = await this.client.waitForTransactionReceipt({
+        hash: txHash,
+        status: "ACCEPTED" as any,
+        retries: 120,
+        interval: 5000,
+      });
 
-    /*
-     * Only inspect diagnostic information when the transaction
-     * did NOT succeed.
-     */
-    const diagnosticText = JSON.stringify(
-      receipt?.consensus_data ?? receipt
-    );
+      console.log("VERIFICATION RECEIPT:", receipt);
+      console.log("STATUS NAME:", receipt?.status_name);
+      console.log("RESULT NAME:", receipt?.result_name);
+      console.log("CONSENSUS DATA:", receipt?.consensus_data);
 
-    if (
-      diagnosticText.includes("403") ||
-      diagnosticText.includes("Forbidden")
-    ) {
-      throw new Error(
-        "WEBSITE_ACCESS_DENIED: The project's website returned HTTP 403 (Forbidden). The website is blocking GenLayer's web renderer."
+      if (
+        receipt?.status_name === "ACCEPTED" &&
+        receipt?.result_name === "MAJORITY_AGREE"
+      ) {
+        return receipt;
+      }
+
+      const diagnosticText = JSON.stringify(
+        receipt?.consensus_data ?? receipt
       );
-    }
 
-    if (
-      diagnosticText.includes("404") ||
-      diagnosticText.includes("Not Found")
-    ) {
+      if (
+        diagnosticText.includes("403") ||
+        diagnosticText.includes("Forbidden")
+      ) {
+        throw new Error(
+          "WEBSITE_ACCESS_DENIED: The project's website returned HTTP 403 (Forbidden)."
+        );
+      }
+
+      if (
+        diagnosticText.includes("404") ||
+        diagnosticText.includes("Not Found")
+      ) {
+        throw new Error(
+          "WEBSITE_NOT_FOUND: The project's website returned HTTP 404 (Not Found)."
+        );
+      }
+
+      if (
+        diagnosticText.includes("WEBPAGE_LOAD_FAILED") ||
+        diagnosticText.includes("ENOTFOUND") ||
+        diagnosticText.includes("DNS") ||
+        diagnosticText.includes("ERR_NAME_NOT_RESOLVED")
+      ) {
+        throw new Error(
+          "WEBSITE_UNREACHABLE: The project's website could not be reached."
+        );
+      }
+
+      if (
+        diagnosticText.includes("500") ||
+        diagnosticText.includes("502") ||
+        diagnosticText.includes("503") ||
+        diagnosticText.includes("504")
+      ) {
+        throw new Error(
+          "WEBSITE_SERVER_ERROR: The project's website returned a server error."
+        );
+      }
+
       throw new Error(
-        "WEBSITE_NOT_FOUND: The project's website returned HTTP 404 (Not Found). Please check the website URL."
+        "VERIFICATION_FAILED: GenLayer could not reach consensus on the verification request."
       );
+    } catch (error: any) {
+      console.error("VERIFICATION TRANSACTION ERROR:", error);
+      throw error;
     }
-
-    if (
-      diagnosticText.includes("WEBPAGE_LOAD_FAILED") ||
-      diagnosticText.includes("ENOTFOUND") ||
-      diagnosticText.includes("DNS") ||
-      diagnosticText.includes("ERR_NAME_NOT_RESOLVED")
-    ) {
-      throw new Error(
-        "WEBSITE_UNREACHABLE: The project's website could not be reached. Please check the URL."
-      );
-    }
-
-    if (
-      diagnosticText.includes("500") ||
-      diagnosticText.includes("502") ||
-      diagnosticText.includes("503") ||
-      diagnosticText.includes("504")
-    ) {
-      throw new Error(
-        "WEBSITE_SERVER_ERROR: The project's website returned a server error. Please try again later."
-      );
-    }
-
-    throw new Error(
-      "RESEARCH_FAILED: GenLayer could not reach consensus on the research request."
-    );
-  } catch (error: any) {
-    console.error("RESEARCH TRANSACTION ERROR:", error);
-    throw error;
   }
-}
 }
 
 export default Web3Research;
