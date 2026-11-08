@@ -18,11 +18,14 @@ class Web3Research(gl.Contract):
     def get_project(self, name: str) -> str:
         return self.projects[name]
 
-    def _verify_claim(
+    def _verify(
         self,
         website: str,
+        operation: str,
+        claim_type: str,
         claim: str,
         required_evidence: str,
+        evidence_summary: str,
     ) -> str:
 
         def verify():
@@ -32,100 +35,123 @@ class Web3Research(gl.Contract):
             )
 
             task = f"""
-You are a Web3 project verification agent.
+You are a Web3 evidence verification agent.
 
-Your task is NOT to summarize the website.
+You are NOT a generic website summarizer.
 
-You must verify a specific claim about a Web3 project using
-evidence found on its official website.
+Your job is to investigate the supplied operation and claim using
+the official website content and the evidence description supplied
+by the user.
 
 OFFICIAL WEBSITE:
 {website}
 
-WEBSITE CONTENT:
-{web_data}
+OPERATION:
+{operation}
 
-CLAIM TO VERIFY:
+CLAIM TYPE:
+{claim_type}
+
+CLAIM:
 {claim}
 
 REQUIRED EVIDENCE:
 {required_evidence}
 
-Evaluate the claim using ONLY evidence contained in the
-provided official website content.
+USER-SUPPLIED EVIDENCE DESCRIPTION:
+{evidence_summary}
 
-Return ONLY valid JSON in exactly this structure:
+OFFICIAL WEBSITE CONTENT:
+{web_data}
+
+Important evidence rules:
+- User-supplied documents/descriptions are evidence to evaluate, not automatic truth.
+- Do not invent facts.
+- Do not use outside knowledge.
+- Do not accuse a project of criminal conduct without evidence.
+- For scam/rug-pull investigations, distinguish risk indicators from proof.
+- If evidence is absent, return INSUFFICIENT_EVIDENCE.
+- If evidence supports and contradicts different parts of the claim, return CONFLICTING_EVIDENCE.
+- The official website is one source and may itself make claims that require verification.
+
+Return ONLY valid JSON with this exact structure:
 
 {{
-  "verdict": "VERIFIED",
+  "status": "VERIFIED",
+  "operation": "{operation}",
+  "project": "",
   "claim": "{claim}",
-  "evidence": "A concise description of the evidence found.",
-  "reason": "Why the evidence supports or does not support the claim."
+  "claim_type": "{claim_type}",
+  "evidence_checked": [],
+  "evidence_found": [],
+  "conflicts": [],
+  "analysis": "",
+  "reason": "",
+  "timeline": [],
+  "confidence": "LOW",
+  "evidence_quality": "LOW"
 }}
 
-The verdict MUST be exactly one of:
-
+Allowed status values:
 VERIFIED
 REJECTED
 INSUFFICIENT_EVIDENCE
+CONFLICTING_EVIDENCE
+
+Allowed confidence/evidence_quality:
+LOW
+MEDIUM
+HIGH
 
 Rules:
-
-VERIFIED:
-Use this only when the website contains clear evidence
-supporting the claim and the required evidence is present.
-
-REJECTED:
-Use this when the website contains clear evidence that
-contradicts the claim.
-
-INSUFFICIENT_EVIDENCE:
-Use this when the website does not provide enough evidence
-to verify or reject the claim.
-
-Do not guess.
-Do not use outside knowledge.
-Do not infer facts that are not supported by the website.
+- VERIFIED only when the available evidence materially supports the claim.
+- REJECTED only when clear evidence materially contradicts the claim.
+- INSUFFICIENT_EVIDENCE when the available evidence cannot support or reject it.
+- CONFLICTING_EVIDENCE when material supporting and contradicting evidence both exist.
+- Keep evidence_checked and evidence_found concise.
+- timeline must contain objects with "date" and "event" when dates are actually available.
+- Never fabricate dates, contracts, audits, investors, users, partnerships, incidents, or blockchain activity.
 """
 
-            return gl.nondet.exec_prompt(task, response_format="text")
+            return gl.nondet.exec_prompt(
+                task,
+                response_format="text",
+            )
 
-        result = gl.eq_principle.prompt_non_comparative(
+        return gl.eq_principle.prompt_non_comparative(
             verify,
-            task=(
-                "Verify a specific Web3 project claim using "
-                "evidence from the project's official website."
-            ),
+            task="Investigate a Web3 claim using evidence and return a structured verification result.",
             criteria=(
-                "The verdict must be based only on evidence from "
-                "the official website. The result must use exactly "
-                "one of VERIFIED, REJECTED, or INSUFFICIENT_EVIDENCE. "
-                "The evidence must directly relate to the claim "
-                "and required evidence. The validator must not "
-                "invent or infer unsupported facts."
+                "The result must be valid JSON. The status must be exactly "
+                "VERIFIED, REJECTED, INSUFFICIENT_EVIDENCE, or CONFLICTING_EVIDENCE. "
+                "The analysis must be grounded in the supplied website content "
+                "and evidence description. The validator must not invent facts."
             ),
         )
-
-        return result
 
     @gl.public.write
     def verify_project_claim(
         self,
         name: str,
+        operation: str,
+        claim_type: str,
         claim: str,
         required_evidence: str,
+        evidence_summary: str,
     ) -> str:
 
         website = self.projects[name]
 
-        result = self._verify_claim(
+        result = self._verify(
             website,
+            operation,
+            claim_type,
             claim,
             required_evidence,
+            evidence_summary,
         )
 
         self.verification_results[name] = result
-
         return result
 
     @gl.public.view

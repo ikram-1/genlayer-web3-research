@@ -1,4 +1,4 @@
-import { createClient } from "genlayer-js";
+﻿import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
 import {
   estimateWriteFeePreset,
@@ -105,8 +105,11 @@ class Web3Research {
 
   async verifyProjectClaim(
     name: string,
+    operation: string,
+    claimType: string,
     claim: string,
     requiredEvidence: string,
+    evidenceSummary: string,
     feePreset?: FeePresetEstimate
   ): Promise<any> {
     const fees = feePresetToTransactionFees(feePreset);
@@ -114,7 +117,14 @@ class Web3Research {
     const txHash = await this.client.writeContract({
       address: this.contractAddress,
       functionName: "verify_project_claim",
-      args: [name, claim, requiredEvidence],
+      args: [
+        name,
+        operation,
+        claimType,
+        claim,
+        requiredEvidence,
+        evidenceSummary,
+      ],
       value: BigInt(0),
       ...(fees ? { fees } : {}),
     });

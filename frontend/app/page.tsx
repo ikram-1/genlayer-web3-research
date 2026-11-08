@@ -7,6 +7,7 @@ import {
   getStudioUrl,
 } from "@/lib/genlayer/client";
 import Web3Research from "@/lib/contracts/Web3Research";
+import { parseVerificationResult } from "@/lib/verification/parser";
 import {
   LineChart,
   Line,
@@ -23,6 +24,9 @@ export default function Home() {
   const [website, setWebsite] = useState("");
   const [claim, setClaim] = useState("");
   const [requiredEvidence, setRequiredEvidence] = useState("");
+  const [operation] = useState("CLAIM_VERIFICATION");
+  const [claimType] = useState("Technology & Product");
+  const [evidenceSummary] = useState("");
   const [savedProject, setSavedProject] = useState("");
   const [researchResult, setResearchResult] = useState("");
   const [loading, setLoading] = useState(false);
@@ -124,8 +128,11 @@ export default function Home() {
       const receipt =
         await contract.verifyProjectClaim(
           projectName,
+          operation,
+          claimType,
           claim,
-          requiredEvidence
+          requiredEvidence,
+          evidenceSummary || requiredEvidence
         );
 
       console.log(
@@ -537,12 +544,11 @@ Market Cap: $${
         </div>
       </div>
 
-      <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
+      <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[11px] font-medium text-blue-300">
         Onchain
       </span>
     </div>
 
-    {/* Verification Content */}
     <div className="px-5 py-5">
       {/* Project */}
       <div className="mb-5 rounded-xl border border-white/5 bg-black/20 px-4 py-3">
@@ -554,163 +560,270 @@ Market Cap: $${
           {projectName}
         </p>
 
-        <p className="mt-1 break-all text-xs text-gray-500">
-          {website}
-        </p>
+        {website && (
+          <p className="mt-1 break-all text-xs text-gray-500">
+            {website}
+          </p>
+        )}
       </div>
 
       {(() => {
-        try {
-          const data = JSON.parse(researchResult);
+        const data = parseVerificationResult(
+          researchResult,
+          claim
+        );
 
-          const verdict = data?.verdict;
-          const claimResult = data?.claim;
-          const evidence = data?.evidence;
-          const reason = data?.reason;
-
-          const verdictConfig = {
-            VERIFIED: {
-              label: "VERIFIED",
-              consequence: "Approved",
-              icon: "✓",
-              className:
-                "border-green-500/30 bg-green-500/10 text-green-300",
-              decisionClass:
-                "border-green-500/20 bg-green-500/5",
-            },
-
-            REJECTED: {
-              label: "REJECTED",
-              consequence: "Flagged",
-              icon: "✕",
-              className:
-                "border-red-500/30 bg-red-500/10 text-red-300",
-              decisionClass:
-                "border-red-500/20 bg-red-500/5",
-            },
-
-            INSUFFICIENT_EVIDENCE: {
-              label: "INSUFFICIENT EVIDENCE",
-              consequence: "More Evidence Required",
-              icon: "!",
-              className:
-                "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
-              decisionClass:
-                "border-yellow-500/20 bg-yellow-500/5",
-            },
-          } as const;
-
-          const config =
-            verdictConfig[
-              verdict as keyof typeof verdictConfig
-            ];
-
-          if (!config) {
-            return (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                <p className="text-sm text-red-300">
-                  Unable to parse the verification result.
-                </p>
-              </div>
-            );
-          }
-
-          return (
-            <div className="space-y-6">
-              {/* Verdict */}
-              <div
-                className={`rounded-2xl border p-5 ${config.className}`}
-              >
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-                      Validator Verdict
-                    </p>
-
-                    <h3 className="mt-1 text-2xl font-bold">
-                      {config.label}
-                    </h3>
-                  </div>
-
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-current text-2xl font-bold">
-                    {config.icon}
-                  </div>
-                </div>
-              </div>
-
-              {/* Decision */}
-              <div
-                className={`rounded-2xl border p-5 ${config.decisionClass}`}
-              >
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Application Decision
-                </p>
-
-                <p className="mt-2 text-xl font-bold text-white">
-                  {config.consequence}
-                </p>
-
-                <p className="mt-1 text-sm text-gray-400">
-                  This decision is based on the GenLayer validator
-                  verification result.
-                </p>
-              </div>
-
-              {/* Claim */}
-              {claimResult && (
-                <div>
-                  <h4 className="mb-2 text-lg font-semibold text-white">
-                    Claim
-                  </h4>
-
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-sm leading-7 text-gray-300">
-                      {claimResult}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Evidence */}
-              {evidence && (
-                <div>
-                  <h4 className="mb-2 text-lg font-semibold text-white">
-                    Evidence Found
-                  </h4>
-
-                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-                    <p className="text-sm leading-7 text-gray-300">
-                      {evidence}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Reason */}
-              {reason && (
-                <div>
-                  <h4 className="mb-2 text-lg font-semibold text-white">
-                    Why This Decision Was Made
-                  </h4>
-
-                  <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                    <p className="text-sm leading-7 text-gray-300">
-                      {reason}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        } catch {
+        if (!data) {
           return (
             <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
               <p className="text-sm text-red-300">
-                Unable to display the verification result.
+                Unable to parse the verification result.
               </p>
             </div>
           );
         }
+
+        const statusConfig = {
+          VERIFIED: {
+            label: "VERIFIED",
+            icon: "?",
+            className:
+              "border-green-500/30 bg-green-500/10 text-green-300",
+          },
+          REJECTED: {
+            label: "REJECTED",
+            icon: "?",
+            className:
+              "border-red-500/30 bg-red-500/10 text-red-300",
+          },
+          INSUFFICIENT_EVIDENCE: {
+            label: "INSUFFICIENT EVIDENCE",
+            icon: "!",
+            className:
+              "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
+          },
+          CONFLICTING_EVIDENCE: {
+            label: "CONFLICTING EVIDENCE",
+            icon: "!",
+            className:
+              "border-orange-500/30 bg-orange-500/10 text-orange-300",
+          },
+        } as const;
+
+        const config = statusConfig[data.status];
+
+        return (
+          <div className="space-y-6">
+            {/* Status */}
+            <div
+              className={`rounded-2xl border p-5 ${config.className}`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                    Validator Status
+                  </p>
+
+                  <h3 className="mt-1 text-2xl font-bold">
+                    {config.label}
+                  </h3>
+                </div>
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-current text-2xl font-bold">
+                  {config.icon}
+                </div>
+              </div>
+            </div>
+
+            {/* Claim */}
+            <div>
+              <h4 className="mb-2 text-lg font-semibold text-white">
+                Claim
+              </h4>
+
+              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                <p className="text-sm leading-7 text-gray-300">
+                  {data.claim || "No claim returned."}
+                </p>
+              </div>
+            </div>
+
+            {/* Claim Type */}
+            {data.claim_type && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Claim Type
+                </h4>
+
+                <span className="inline-flex rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1.5 text-xs font-medium text-purple-300">
+                  {data.claim_type}
+                </span>
+              </div>
+            )}
+
+            {/* Evidence Checked */}
+            {data.evidence_checked.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Evidence Checked
+                </h4>
+
+                <div className="space-y-2">
+                  {data.evidence_checked.map(
+                    (item, index) => (
+                      <div
+                        key={`checked-${index}`}
+                        className="rounded-xl border border-white/10 bg-black/20 p-4"
+                      >
+                        <p className="text-sm leading-6 text-gray-300">
+                          {item}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Evidence Found */}
+            {data.evidence_found.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Evidence Found
+                </h4>
+
+                <div className="space-y-2">
+                  {data.evidence_found.map(
+                    (item, index) => (
+                      <div
+                        key={`found-${index}`}
+                        className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4"
+                      >
+                        <p className="text-sm leading-7 text-gray-300">
+                          {item}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Conflicts */}
+            {data.conflicts.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Conflicts & Nuances
+                </h4>
+
+                <div className="space-y-2">
+                  {data.conflicts.map(
+                    (item, index) => (
+                      <div
+                        key={`conflict-${index}`}
+                        className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-4"
+                      >
+                        <p className="text-sm leading-7 text-orange-100/80">
+                          {item}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Analysis */}
+            {data.analysis && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Analysis
+                </h4>
+
+                <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                  <p className="text-sm leading-7 text-gray-300">
+                    {data.analysis}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Reason */}
+            {data.reason && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Why This Decision Was Made
+                </h4>
+
+                <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                  <p className="text-sm leading-7 text-gray-300">
+                    {data.reason}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Timeline */}
+            {data.timeline.length > 0 && (
+              <div>
+                <h4 className="mb-2 text-lg font-semibold text-white">
+                  Timeline
+                </h4>
+
+                <div className="space-y-3">
+                  {data.timeline.map(
+                    (item, index) => (
+                      <div
+                        key={`timeline-${index}`}
+                        className="rounded-xl border border-white/10 bg-black/20 p-4"
+                      >
+                        {item.date && (
+                          <p className="text-xs font-semibold uppercase tracking-wider text-purple-400">
+                            {item.date}
+                          </p>
+                        )}
+
+                        <p className="mt-1 text-sm leading-6 text-gray-300">
+                          {item.event || "Event"}
+                        </p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Quality Summary */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs text-gray-500">
+                  Validator Confidence
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-white">
+                  {data.confidence}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs text-gray-500">
+                  Evidence Quality
+                </p>
+
+                <p className="mt-1 text-lg font-bold text-white">
+                  {data.evidence_quality}
+                </p>
+              </div>
+            </div>
+
+            {/* Operation */}
+            {data.operation && (
+              <p className="text-xs text-gray-500">
+                Operation: {data.operation}
+              </p>
+            )}
+          </div>
+        );
       })()}
     </div>
   </div>
@@ -1106,5 +1219,8 @@ Market Cap: $${
     </main>
   );
 }
+
+
+
 
 
