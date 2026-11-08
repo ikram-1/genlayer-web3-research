@@ -88,7 +88,7 @@ Do not use outside knowledge.
 Do not infer facts that are not supported by the website.
 """
 
-            return gl.nondet.exec_prompt(task)
+            return gl.nondet.exec_prompt(task, response_format="text")
 
         result = gl.eq_principle.prompt_non_comparative(
             verify,
@@ -130,4 +130,7 @@ Do not infer facts that are not supported by the website.
 
     @gl.public.view
     def get_verification(self, name: str) -> str:
-        return self.verification_results[name]
+        try:
+            return self.verification_results[name]
+        except Exception:
+            return ""

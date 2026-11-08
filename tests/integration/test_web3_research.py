@@ -10,9 +10,38 @@ def test_add_and_get_project():
 
     add_result = contract.add_project(
         args=["GenLayer", "https://www.genlayer.com"]
-    )
+    ).transact()
+
     assert tx_execution_succeeded(add_result)
 
-    result = contract.get_project(args=["GenLayer"])
+    result = contract.get_project(args=["GenLayer"]).call()
 
     assert result == "https://www.genlayer.com"
+
+
+@pytest.mark.integration
+def test_verify_project_claim():
+    factory = get_contract_factory("Web3Research")
+    contract = factory.deploy()
+
+    add_result = contract.add_project(
+        args=["GenLayer", "https://www.genlayer.com"]
+    ).transact()
+
+    assert tx_execution_succeeded(add_result)
+
+    verify_result = contract.verify_project_claim(
+        args=[
+            "GenLayer",
+            "GenLayer enables smart contracts to interact with web data.",
+            "Official GenLayer website evidence stating that smart contracts can interact with web data.",
+        ]
+    ).transact()
+
+    assert tx_execution_succeeded(verify_result)
+
+    result = contract.get_verification(
+        args=["GenLayer"]
+    ).call()
+
+    assert result
