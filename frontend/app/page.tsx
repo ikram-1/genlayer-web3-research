@@ -517,203 +517,204 @@ Market Cap: $${
           )}
 
           {/* Verification Result */}
-          {researchResult && (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-[#0d0d18] to-blue-500/5 shadow-lg shadow-purple-950/20">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-lg">
-                    V
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      Verification Result
-                    </p>
-
-                    <p className="text-xs text-gray-500">
-                      Verified through GenLayer
-                    </p>
-                  </div>
-                </div>
-
-                <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
-                  Onchain
-                </span>
-              </div>
-
-              {/* Research Content */}
-              <div className="px-5 py-5">
-                <div className="mb-5 rounded-xl border border-white/5 bg-black/20 px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400">
-                    Project
-                  </p>
-
-                  <p className="mt-1 text-sm font-medium text-white">
-                    {projectName}
-                  </p>
-
-                  <p className="mt-1 break-all text-xs text-gray-500">
-                    {website}
-                  </p>
-                </div>
-
-                {(() => {
-                  try {
-                    const data =
-                      JSON.parse(
-                        researchResult
-                      );
-
-                    const verdict =
-                      data?.verdict;
-
-                    const claimResult =
-                      data?.claim;
-
-                    const evidence =
-                      data?.evidence;
-
-                    const reason =
-                      data?.reason;
-
-                    const verdictConfig =
-                      {
-                        VERIFIED: {
-                          label: "VERIFIED",
-                          consequence:
-                            "Approved",
-                          icon: "✓",
-                          className:
-                            "border-green-500/30 bg-green-500/10 text-green-300",
-                        },
-
-                        REJECTED: {
-                          label: "REJECTED",
-                          consequence:
-                            "Flagged",
-                          icon: "✕",
-                          className:
-                            "border-red-500/30 bg-red-500/10 text-red-300",
-                        },
-
-                        INSUFFICIENT_EVIDENCE:
-                          {
-                            label:
-                              "INSUFFICIENT EVIDENCE",
-                            consequence:
-                              "More Evidence Required",
-                            icon: "!",
-                            className:
-                              "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
-                          },
-                      } as const;
-
-                    const config =
-                      verdictConfig[
-                        verdict as keyof typeof verdictConfig
-                      ];
-
-                    if (!config) {
-                      return (
-                        <p className="whitespace-pre-wrap text-sm leading-7 text-gray-300">
-                          {researchResult}
-                        </p>
-                      );
-                    }
-
-                    return (
-                      <div className="space-y-6">
-                        {/* Verdict */}
-                        <div
-                          className={`rounded-2xl border p-5 ${config.className}`}
-                        >
-                          <div className="flex items-center justify-between gap-4">
-                            <div>
-                              <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
-                                Validator Verdict
-                              </p>
-
-                              <h3 className="mt-1 text-2xl font-bold">
-                                {config.label}
-                              </h3>
-                            </div>
-
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-current text-2xl font-bold">
-                              {config.icon}
-                            </div>
-                          </div>
-
-                          <div className="mt-4 rounded-xl border border-current/10 bg-black/20 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-                              Application Consequence
-                            </p>
-
-                            <p className="mt-1 text-sm font-semibold">
-                              {config.consequence}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Claim */}
-                        {claimResult && (
-                          <div>
-                            <h4 className="mb-2 text-lg font-semibold text-white">
-                              Claim Verified
-                            </h4>
-
-                            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                              <p className="text-sm leading-7 text-gray-300">
-                                {claimResult}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Evidence */}
-                        {evidence && (
-                          <div>
-                            <h4 className="mb-2 text-lg font-semibold text-white">
-                              Evidence Found
-                            </h4>
-
-                            <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-                              <p className="text-sm leading-7 text-gray-300">
-                                {evidence}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Reason */}
-                        {reason && (
-                          <div>
-                            <h4 className="mb-2 text-lg font-semibold text-white">
-                              Validator Reason
-                            </h4>
-
-                            <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                              <p className="text-sm leading-7 text-gray-300">
-                                {reason}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  } catch {
-                    return (
-                      <p className="whitespace-pre-wrap text-sm leading-7 text-gray-300">
-                        {researchResult}
-                      </p>
-                    );
-                  }
-                })()}
-              </div>
-            </div>
-          )}
+{researchResult && (
+  <div className="mt-6 overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-[#0d0d18] to-blue-500/5 shadow-lg shadow-purple-950/20">
+    {/* Header */}
+    <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/15 text-lg">
+          V
         </div>
-      </section>
+
+        <div>
+          <p className="text-sm font-semibold text-white">
+            Verification Result
+          </p>
+
+          <p className="text-xs text-gray-500">
+            Verified through GenLayer
+          </p>
+        </div>
+      </div>
+
+      <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[11px] font-medium text-green-400">
+        Onchain
+      </span>
+    </div>
+
+    {/* Verification Content */}
+    <div className="px-5 py-5">
+      {/* Project */}
+      <div className="mb-5 rounded-xl border border-white/5 bg-black/20 px-4 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400">
+          Project
+        </p>
+
+        <p className="mt-1 text-sm font-medium text-white">
+          {projectName}
+        </p>
+
+        <p className="mt-1 break-all text-xs text-gray-500">
+          {website}
+        </p>
+      </div>
+
+      {(() => {
+        try {
+          const data = JSON.parse(researchResult);
+
+          const verdict = data?.verdict;
+          const claimResult = data?.claim;
+          const evidence = data?.evidence;
+          const reason = data?.reason;
+
+          const verdictConfig = {
+            VERIFIED: {
+              label: "VERIFIED",
+              consequence: "Approved",
+              icon: "✓",
+              className:
+                "border-green-500/30 bg-green-500/10 text-green-300",
+              decisionClass:
+                "border-green-500/20 bg-green-500/5",
+            },
+
+            REJECTED: {
+              label: "REJECTED",
+              consequence: "Flagged",
+              icon: "✕",
+              className:
+                "border-red-500/30 bg-red-500/10 text-red-300",
+              decisionClass:
+                "border-red-500/20 bg-red-500/5",
+            },
+
+            INSUFFICIENT_EVIDENCE: {
+              label: "INSUFFICIENT EVIDENCE",
+              consequence: "More Evidence Required",
+              icon: "!",
+              className:
+                "border-yellow-500/30 bg-yellow-500/10 text-yellow-300",
+              decisionClass:
+                "border-yellow-500/20 bg-yellow-500/5",
+            },
+          } as const;
+
+          const config =
+            verdictConfig[
+              verdict as keyof typeof verdictConfig
+            ];
+
+          if (!config) {
+            return (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+                <p className="text-sm text-red-300">
+                  Unable to parse the verification result.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-6">
+              {/* Verdict */}
+              <div
+                className={`rounded-2xl border p-5 ${config.className}`}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider opacity-70">
+                      Validator Verdict
+                    </p>
+
+                    <h3 className="mt-1 text-2xl font-bold">
+                      {config.label}
+                    </h3>
+                  </div>
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-current text-2xl font-bold">
+                    {config.icon}
+                  </div>
+                </div>
+              </div>
+
+              {/* Decision */}
+              <div
+                className={`rounded-2xl border p-5 ${config.decisionClass}`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Application Decision
+                </p>
+
+                <p className="mt-2 text-xl font-bold text-white">
+                  {config.consequence}
+                </p>
+
+                <p className="mt-1 text-sm text-gray-400">
+                  This decision is based on the GenLayer validator
+                  verification result.
+                </p>
+              </div>
+
+              {/* Claim */}
+              {claimResult && (
+                <div>
+                  <h4 className="mb-2 text-lg font-semibold text-white">
+                    Claim
+                  </h4>
+
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-sm leading-7 text-gray-300">
+                      {claimResult}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Evidence */}
+              {evidence && (
+                <div>
+                  <h4 className="mb-2 text-lg font-semibold text-white">
+                    Evidence Found
+                  </h4>
+
+                  <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+                    <p className="text-sm leading-7 text-gray-300">
+                      {evidence}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Reason */}
+              {reason && (
+                <div>
+                  <h4 className="mb-2 text-lg font-semibold text-white">
+                    Why This Decision Was Made
+                  </h4>
+
+                  <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
+                    <p className="text-sm leading-7 text-gray-300">
+                      {reason}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        } catch {
+          return (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+              <p className="text-sm text-red-300">
+                Unable to display the verification result.
+              </p>
+            </div>
+          );
+        }
+      })()}
+    </div>
+  </div>
+)}
 
       {/* Token Explorer */}
       <section className="mx-auto max-w-3xl px-6 pb-4">
@@ -1100,6 +1101,10 @@ Market Cap: $${
           Built with GenLayer Intelligent Contracts
         </p>
       </footer>
+    </div>
+    </section>
     </main>
   );
 }
+
+
