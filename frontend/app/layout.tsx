@@ -4,8 +4,8 @@ import { Providers } from "./providers";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
-  title: "GenLayer Football Market",
-  description: "AI-powered football match predictions on GenLayer blockchain. Create bets, make predictions, and compete for points.",
+  title: "GenLayer Web3 Verification",
+  description: "Verify Web3 claims, investigate incidents, and evaluate project evidence using GenLayer validators.",
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -33,3 +33,4 @@ export default function RootLayout({
     </html>
   );
 }
+

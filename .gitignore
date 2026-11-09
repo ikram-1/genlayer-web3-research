@@ -28,3 +28,5 @@ builder-metamask.json
 *.backup.tsx
 *.backup.ts
 *.tsbuildinfo
+.vercel
+.env*
